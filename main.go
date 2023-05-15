@@ -9,8 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var lock sync.Mutex
-
 type Person struct {
 	Name `json:"Name"`
 	Age  `json:"Age"`
@@ -101,7 +99,7 @@ func Thread1(c *gin.Context, i int, wg *sync.WaitGroup, isDataAvailable chan boo
 func Thread2(data string, wg *sync.WaitGroup, isDataAvailable chan bool, c *gin.Context) {
 	for {
 		select {
-		//if data is available the spwan one o routine
+
 		case out := <-isDataAvailable:
 			fmt.Println("isDataAvailable: ", out)
 			if out {
@@ -118,7 +116,6 @@ func Thread2(data string, wg *sync.WaitGroup, isDataAvailable chan bool, c *gin.
 			} else {
 				fmt.Println("Data is not available")
 			}
-			// wg.Done()
 		}
 	}
 
