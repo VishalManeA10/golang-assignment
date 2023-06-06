@@ -55,61 +55,62 @@ func main() {
 	r.Run("localhost:8080")
 }
 
-func mainAPI(c *gin.Context) {
+func mainAPI(ctx *gin.Context) {
 	isDataAvailable := make(chan bool, 1)
 	wg := &sync.WaitGroup{}
+	i := 0
+
 	funcDBLength := funcDB("getlength", 0)
 	fmt.Println("funcDBLength : ", funcDBLength)
 	wg.Add(1)
 
-	var i = 0
 	for i < funcDBLength.(int)+1 {
-		go Thread1(c, i, wg, isDataAvailable)
-		time.Sleep(1 * time.Second)
+		go Thread1(ctx, i, wg, isDataAvailable)
+		time.Sleep(10 * time.Millisecond)
 		i++
 	}
 	wg.Wait()
 }
 
-func Thread1(c *gin.Context, i int, wg *sync.WaitGroup, isDataAvailable chan bool) {
+func Thread1(ctx *gin.Context, i int, wg *sync.WaitGroup, isDataAvailable chan bool) {
 	funcData := funcDB("getData", i)
 
 	// fmt.Printf("funcData value: %v\n", funcData)
 	// fmt.Printf("funcData type : %T", funcData)
 
-	val, ok := funcData.(int)
-	if ok && val == -1 {
+	val, exist := funcData.(int)
+	fmt.Println("exist : ", exist)
+	if exist && val == -1 {
 		isDataAvailable <- false
-		go Thread2("", wg, isDataAvailable, c)
+		go Thread2("", wg, isDataAvailable, ctx)
 	} else {
 		data := Person{Name: funcData.(Person).Name, Age: funcData.(Person).Age, Year: funcData.(Person).Year}
-		fmt.Println("data : ", data)
+		fmt.Println("funcDB data : ", data)
 
 		p1, err := json.Marshal(data)
 		if err != nil {
-			fmt.Println("error while marshaling 1 : ", err)
+			fmt.Println("Marshaling error : ", err)
 		}
 
-		fmt.Println("marshalled data p1 : ", string(p1))
+		fmt.Println("marshalled data : ", string(p1))
 		isDataAvailable <- true
-		go Thread2(string(p1), wg, isDataAvailable, c)
+		go Thread2(string(p1), wg, isDataAvailable, ctx)
 	}
 }
 
-func Thread2(data string, wg *sync.WaitGroup, isDataAvailable chan bool, c *gin.Context) {
+func Thread2(data string, wg *sync.WaitGroup, isDataAvailable chan bool, ctx *gin.Context) {
 	for {
 		select {
-
 		case out := <-isDataAvailable:
 			fmt.Println("isDataAvailable: ", out)
 			if out {
 				var unMarshalledPerson Person
 				if len(data) == 0 {
-					fmt.Println("Error: Empty JSON input")
+					fmt.Println("Error: Empty JSON Received")
 				}
 				err := json.Unmarshal([]byte(data), &unMarshalledPerson)
 				if err != nil {
-					fmt.Println("error while Unmarshaling 2: ", err)
+					fmt.Println("Unmarshaling error : ", err)
 				}
 				fmt.Println("unmarshalled data : ", unMarshalledPerson)
 				//TODO: send the recived data to Thread 3 over grpc by goroutine
@@ -118,5 +119,4 @@ func Thread2(data string, wg *sync.WaitGroup, isDataAvailable chan bool, c *gin.
 			}
 		}
 	}
-
 }

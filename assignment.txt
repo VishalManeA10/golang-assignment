@@ -1,0 +1,27 @@
+funcsDB() {
+	should host list of Data which  contians 3 type of data 1. int, 2. string, 3. float eg string Name: Vishal, float Age:24.5 and int Year : 1995. list will look like {(vishal,24.5,1995), (arvind, 25.5, 194)} 
+	Each  Data should be exposed through interface, based on type of data has been requested.
+}
+
+There are 2 thread, each has below resonsiblity.
+
+thread1{
+	it should fetch data  name,age,year from funcDB and club together for 3 iteration, each iteration would request all 3 data (vishal, 24.5,1995). it keep iterating until list in funcDB doesnot get empty.	
+	it should serialize the list of 3 element fetched using json and sends to thread2.
+	until funcDB list finishes once list finished intimate to thread2 using channel and stop sending.
+}
+
+Thread2 {
+    it should receive data over rest and parse it and convert to protobuf and send over grpc.
+    it should stop receiving data once signal through channel.
+    and resume again once singaled through channel.
+}
+
+Thread3 {
+	consume grpc data from thread2 and print. 
+}
+
+stage 1: funcDB and thread1, thread2  rest api consumption and channel signaling part from thread1 Implementation.
+stage2: protobuf grpc commuinication from thread2 and thread 3 implementation.
+
+Note: Stage 2 should be done only after stage1 completion. 
